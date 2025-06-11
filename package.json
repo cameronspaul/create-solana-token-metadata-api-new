@@ -7,7 +7,13 @@
     "start": "tsx src/api-server.ts",
     "dev": "tsx watch src/api-server.ts",
     "create-token": "tsx src/create-token.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test-api": "node scripts/test-api.js",
+    "test-revocation": "node scripts/test-selective-revocation.js",
+    "test-all": "npm run test-api && npm run test-revocation",
+    "batch-create": "node scripts/batch-create-tokens.js",
+    "cli": "node scripts/interactive-cli.js",
+    "examples": "node scripts/examples.js"
   },
   "keywords": [],
   "author": "",

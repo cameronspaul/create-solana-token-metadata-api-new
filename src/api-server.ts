@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import { createTokenFromMetadataUrl, TokenCreationResult } from './create-token';
+import { createTokenFromMetadataUrl, TokenCreationResult, revokeTokenAuthorities } from './create-token';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,9 +13,15 @@ app.use(cors()); // Enable CORS
 app.use(morgan('combined')); // Logging
 app.use(express.json()); // Parse JSON bodies
 
-// Request interface
+// Request interfaces
 interface CreateTokenRequest {
   metadataUrl: string;
+}
+
+interface RevokeAuthoritiesRequest {
+  mintAddress: string;
+  revokeMintAuthority?: boolean;
+  revokeFreezeAuthority?: boolean;
 }
 
 // Response interfaces
@@ -112,6 +118,80 @@ app.post('/create-token', async (req, res) => {
   }
 });
 
+// Revoke token authorities endpoint
+app.post('/revoke-authorities', async (req, res) => {
+  try {
+    // Validate request body
+    const { mintAddress, revokeMintAuthority, revokeFreezeAuthority }: RevokeAuthoritiesRequest = req.body;
+
+    if (!mintAddress) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required parameter: mintAddress'
+      } as ErrorResponse);
+    }
+
+    if (typeof mintAddress !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'mintAddress must be a string'
+      } as ErrorResponse);
+    }
+
+    // Validate boolean parameters if provided
+    if (revokeMintAuthority !== undefined && typeof revokeMintAuthority !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        error: 'revokeMintAuthority must be a boolean'
+      } as ErrorResponse);
+    }
+
+    if (revokeFreezeAuthority !== undefined && typeof revokeFreezeAuthority !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        error: 'revokeFreezeAuthority must be a boolean'
+      } as ErrorResponse);
+    }
+
+    // Default to revoking both authorities if not specified
+    const options = {
+      revokeMintAuthority: revokeMintAuthority ?? true,
+      revokeFreezeAuthority: revokeFreezeAuthority ?? true
+    };
+
+    console.log(`Revoking authorities for token: ${mintAddress}`, options);
+
+    // Revoke the authorities
+    const result = await revokeTokenAuthorities(mintAddress, options);
+
+    if (result.success) {
+      // Return success response
+      res.json({
+        success: true,
+        data: {
+          mintAddress,
+          signatures: result.signatures || [],
+          revoked: result.revoked || { mintAuthority: false, freezeAuthority: false },
+          message: 'Authority revocation completed'
+        }
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: result.error || 'Failed to revoke authorities'
+      } as ErrorResponse);
+    }
+
+  } catch (error) {
+    console.error('Error revoking authorities:', error);
+
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'An unexpected error occurred'
+    } as ErrorResponse);
+  }
+});
+
 // 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({
@@ -135,7 +215,9 @@ app.listen(PORT, () => {
   console.log(`🚀 Solana Token Creation API server running on port ${PORT}`);
   console.log(`📋 Health check: http://localhost:${PORT}/health`);
   console.log(`🪙 Create token: POST http://localhost:${PORT}/create-token`);
-  console.log(`📖 Example request body: { "metadataUrl": "https://example.com/metadata.json" }`);
+  console.log(`🔒 Revoke authorities: POST http://localhost:${PORT}/revoke-authorities`);
+  console.log(`📖 Example create token body: { "metadataUrl": "https://example.com/metadata.json" }`);
+  console.log(`📖 Example revoke authorities body: { "mintAddress": "YourMintAddressHere", "revokeMintAuthority": true, "revokeFreezeAuthority": true }`);
 });
 
 export default app;

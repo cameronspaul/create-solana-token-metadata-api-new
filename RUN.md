@@ -1,1 +1,0 @@
-ts-node src/create-token.ts
