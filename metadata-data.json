@@ -1,0 +1,15 @@
+{
+    "name": "Taskmanager",
+    "symbol": "TSK",
+    "description": "Taskmanager coin",
+    "image": "https://raw.githubusercontent.com/cameronspaul/create-solana-token-metadata/refs/heads/main/image.png",
+    "creator": {
+      "name": "Taskmanger",
+      "site": "www.task.io"
+    },
+    "external_url": "",
+    "twitter": "",
+    "telegram": "",
+    "discord": ""
+  
+  }
